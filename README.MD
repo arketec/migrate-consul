@@ -1,6 +1,5 @@
 # migrate-consul
 
-[![Build Status](http://mcc-build-linux01:8080/static/b99b620d/images/48x48/blue.png)](http://mcc-build-linux01:8080/job/Consul-Migrations/)
 
 migrate-consul is a migration assistant for Consul KV that features:
 
