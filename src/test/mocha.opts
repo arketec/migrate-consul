@@ -1,0 +1,7 @@
+###
+### mocha.opts
+###
+
+--r ts-node/register
+--timeout 999999
+--colors
