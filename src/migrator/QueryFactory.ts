@@ -88,7 +88,6 @@ export class QueryFactory {
     } else {
       return consul.set(this.key, this._value)
     }
-    this.reset()
   }
 
   public async push(consul: IMigrationClient): Promise<void> {
