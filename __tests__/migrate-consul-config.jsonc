@@ -1,0 +1,36 @@
+{
+     // configure mongodb
+    "database": {
+        "host": "localhost",
+        "port": "27017",
+        "dbname": "consul_migrations"
+    },
+    
+    // configure consul agent
+    "consul": {
+        "host": "localhost",
+        "port": "8500",
+        "secure": false,
+        "acl": false,
+        "aclTokenEnvVar": ""
+    },
+    // configure script generation options
+    "generation": {
+        "printExamples": true,
+        "generateTypesFromKeys": false,
+        "includeTypes": true
+    },
+    "diff": {
+        "maxDiffLength": 10000,
+        "colors": {
+            "bg": "bgCyan",
+            "added": "green",
+            "removed": "red",
+            "unchanged": "grey",
+        }
+    },
+    // environment config
+    "migrationsDirectory": "migrations",
+    "environment": "local",
+    "debug": false
+}
