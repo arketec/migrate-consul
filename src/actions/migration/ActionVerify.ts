@@ -110,12 +110,12 @@ export class ActionVerify extends ActionDBBase<VerifyOptions> {
         const stringifiedCurrentValue = currentValue
           ? typeof currentValue === 'object'
             ? JSON.stringify(currentValue, null, 2)
-            : currentValue
+            : currentValue.toString()
           : ''
         const stringifiedNewValue = migrator.output.value
           ? typeof migrator.output.value === 'object'
             ? JSON.stringify(migrator.output.value, null, 2)
-            : migrator.output.value
+            : migrator.output.value.toString()
           : ''
         this.loggers.debug(
           currentValue,
