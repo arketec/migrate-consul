@@ -87,7 +87,8 @@ export class ActionCreate extends ActionBase<CreateOptions> {
               value: consulResult.Value,
               showExamples:
                 this.options.includeExamples ??
-                this.config.generation.printExamples,
+                this.config.generation.printExamples ??
+                false,
               debug: this.options.debug ? true : this.config.debug ?? false,
               includeTypes: this.config.generation.includeTypes,
               types: types.filter((t) => t !== undefined),
@@ -118,10 +119,14 @@ export class ActionCreate extends ActionBase<CreateOptions> {
           props: {
             key: this.options.key ?? 'sample',
             value,
-            showExamples: this.options.examples ?? false,
+            showExamples:
+              this.options.examples ??
+              this.config.generation.printExamples ??
+              false,
             debug: this.options.debug ? true : this.config.debug ?? false,
             includeTypes: this.config.generation.includeTypes,
             types: types.filter((t) => t !== undefined),
+            isSample: false,
           },
         })
       }
@@ -132,10 +137,14 @@ export class ActionCreate extends ActionBase<CreateOptions> {
         props: {
           key: this.options.key ?? 'sample',
           value: this.options.value ?? 'foo',
-          showExamples: this.options.includeExamples ?? false,
+          showExamples:
+            this.options.includeExamples ??
+            this.config.generation.printExamples ??
+            false,
           debug: this.options.debug ? true : this.config.debug ?? false,
           includeTypes: this.config.generation.includeTypes,
           types: [],
+          isSample: false,
         },
       })
     }
