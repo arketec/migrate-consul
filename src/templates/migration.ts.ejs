@@ -1,0 +1,61 @@
+<% if (props.includeTypes) { %>import { IMigrationClient, Consul } from '../types/types'
+<% } %>export default {
+  up: async (consul<% if (props.includeTypes) { %>: IMigrationClient <% } else {%>: any <% } %>, env: string, client<% if (props.includeTypes) { %>: Consul.Consul <% } else {%>: any <% } %><% if (props.debug) { %>, logger: (msg: any, title?: string) => void<% } %>) => {
+    // write your migration here. Must be awaited or return Promise
+    <% if(props.showExamples){ %>
+    //  - - - - Examples - - - -
+    //
+    // add/update a key:
+    // await consul.set('Test_Key', 'test value')
+    //
+    // set multiple keys:
+    // await consul.setMany({Test_Key1: 'test value 1', Test_Key2: 'test value 2'})
+    //
+    // using QueryFactory:
+    // await consul.key('Test_Key').val('test value').save()
+    //
+    // working with JSON values:
+    //
+    // jpath (deprecated):
+    // await consul.key('Test_Key').jpath('a.b.c').val('test value').save()
+    //
+    // jsonpath:
+    // await consul.key('Test_Key').jsonpath('$.b.c').val('test value').save()
+    // 
+    // results -----> {"a": {"b": {"c": "test value"}}}
+    // 
+    // to set keys in depending on environment (set in config), use the 'env' value
+    // const values = { dev: 'foo', test: 'bar', prod: 'baz' }
+    // await consul.set('Test_Key', values[env])
+    // 
+    <% } %>
+    <% if (!props.isSample) {%>await consul.key(`<%- props.key %>`).val(`<%- props.value %>`).save();<% } %>
+  },
+  down: async (consul<% if (props.includeTypes) { %>: IMigrationClient <% } else {%>: any <% } %>, env: string, client<% if (props.includeTypes) { %>: Consul.Consul <% } else {%>: any <% } %><% if (props.debug) { %>, logger: (msg: any, title?: string) => void<% } %>) => {
+    // write your rollback here. Must be awaited or return Promise
+    <% if(props.showExamples){ %>
+    //  - - - - Examples - - - -
+    //
+    // reverse adding a new key:
+    // await consul.delete('Test_Key')
+    //
+    // rollback multiple keys:
+    // await consul.deleteMany(['Test_Key1', 'Test_Key2'])
+    //
+    // delete a key with QueryFactory:
+    // await consul.key('Test_Key').drop()
+    //
+    // delete a single filed in JSON with QueryFactory:
+    // await consul.key('Test_Key').jpath('a.b.c').drop()
+    //
+    // results ------> {"a": {"b": {}}}
+    <% } %>
+    <% if (!props.isSample) {%>await consul.key(`<%- props.key %>`).drop();<% } %>
+  }
+}
+
+<% if (props.types.length > 0)  { %>
+<% props.types.forEach(type => { %>
+<%- type %>
+<% }) %>
+<% } %>

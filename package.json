@@ -1,37 +1,90 @@
 {
   "name": "migrate-consul",
-  "version": "1.6.5",
-  "description": "",
-  "main": "dist/index.js",
+  "version": "3.0.8",
+  "description": "migrate-consul CLI",
+  "types": "build/types/types.d.ts",
+  "main": "build/index.js",
   "bin": {
-    "migrate-consul": "bin/migrate-consul.js"
+    "migrate-consul": "bin/migrate-consul"
   },
   "scripts": {
-    "test": "mocha \"src/test/**/*.test.ts\" --reporter spec --compilers ts:ts-node/register",
-    "start": "migrate-consul"
+    "clean-build": "rm -rf ./build",
+    "compile": "tsc -p .",
+    "copy-templates": "if [ -e ./src/templates ]; then cp -a ./src/templates ./build/; fi",
+    "build": "yarn clean-build && yarn compile && yarn copy-templates",
+    "prepublishOnly": "yarn build",
+    "format": "eslint \"**/*.{js,jsx,ts,tsx}\" --fix && prettier \"**/*.{js,jsx,ts,tsx,json}\" --write",
+    "test": "jest",
+    "watch": "jest --watch",
+    "snapupdate": "jest --updateSnapshot",
+    "coverage": "jest --coverage"
   },
-  "author": "Noah Maughan",
+  "files": [
+    "build",
+    "LICENSE",
+    "readme.md",
+    "docs",
+    "bin"
+  ],
   "license": "MIT",
-  "devDependencies": {
-    "@types/chai": "^4.1.7",
-    "@types/chai-http": "^3.0.5",
-    "@types/commander": "^2.12.2",
-    "@types/consul": "^0.23.33",
-    "@types/lodash": "^4.14.118",
-    "@types/mocha": "^5.2.5",
-    "@types/mongoose": "^5.3.1",
-    "@types/node": "^10.12.4",
-    "chai": "^4.2.0",
-    "mocha": "^5.2.0",
-    "ts-node": "^7.0.1",
-    "typescript": "^3.1.6"
-  },
   "dependencies": {
     "cli-table2": "^0.2.0",
-    "colors": "^1.3.2",
-    "commander": "^2.19.0",
-    "consul": "^0.34.1",
-    "lodash": "^4.17.11",
-    "mongoose": "^5.3.14"
+    "consul": "^0.40.0",
+    "diff": "^5.1.0",
+    "gluegun": "latest",
+    "hjson": "^3.2.2",
+    "jsonpath": "^1.1.1",
+    "mongoose": "^6.4.1",
+    "npm-programmatic": "^0.0.12"
+  },
+  "devDependencies": {
+    "@types/cli-table2": "^0.2.3",
+    "@types/consul": "^0.40.0",
+    "@types/diff": "^5.0.2",
+    "@types/hjson": "^2.4.3",
+    "@types/jest": "^26.0.20",
+    "@types/jsonpath": "^0.2.0",
+    "@types/mongoose": "^5.11.97",
+    "@types/node": "16",
+    "@types/sinon": "^10.0.12",
+    "@typescript-eslint/eslint-plugin": "^4.17.0",
+    "@typescript-eslint/parser": "^4.17.0",
+    "copyfiles": "^2.4.1",
+    "eslint": "^7.22.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-prettier": "^3.3.1",
+    "husky": "^5.1.3",
+    "jest": "^26.6.3",
+    "prettier": "^2.2.1",
+    "pretty-quick": "^3.1.0",
+    "sinon": "^14.0.0",
+    "ts-jest": "^26.5.3",
+    "ts-node": "^10.8.1",
+    "typescript": "^4.7.4"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "migrations",
+      "types"
+    ],
+    "watchPathIgnorePatterns": [
+      "migrations",
+      "types",
+      "__tests__"
+    ]
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
   }
 }
