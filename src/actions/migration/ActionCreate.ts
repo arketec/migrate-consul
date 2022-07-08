@@ -71,7 +71,7 @@ export class ActionCreate extends ActionBase<CreateOptions> {
           newFile = `${
             this.options.path ?? this.appRoot
           }/${migrationsDir}/${nowAsString()}-${desc}-${consulResult.Key.replace(
-            '/',
+            /\//g,
             '_'
           )}.ts`
           this.loggers.debug(newFile, 'migration filename')
