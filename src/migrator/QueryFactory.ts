@@ -12,7 +12,6 @@ export class QueryFactory {
   private _value: any
   private _all_values: string[]
   private _isJson: boolean
-  private _isValueArray: boolean
 
   constructor() {
     this.key = null
@@ -23,7 +22,6 @@ export class QueryFactory {
     this._value = null
     this._all_values = []
     this._isJson = false
-    this._isValueArray = false
   }
 
   private reset() {
@@ -34,7 +32,6 @@ export class QueryFactory {
     this._value = null
     this._all_values = []
     this._isJson = false
-    this._isValueArray = false
   }
 
   public setKey(k: string): void {
@@ -59,7 +56,6 @@ export class QueryFactory {
   public setValue(v: any): void {
     this._value = this.tryParseJson(v)
     this._all_values.push(this._value)
-    this._isValueArray = this._isJson && v.length
   }
 
   public async exec(consul: IMigrationClient): Promise<void> {
@@ -91,25 +87,27 @@ export class QueryFactory {
   }
 
   public async push(consul: IMigrationClient): Promise<void> {
-    if (this._isJson && this._isValueArray) {
-      const result = await consul.get<string>(this.key)
-      const parsed = typeof result === 'string' ? JSON.parse(result) : result
-      if (!parsed) {
-        throw new Error('Current value is not a json object')
-      }
-      const helper = new JSONHelper(result)
-
-      for (const i in this._all_jpaths) {
-        helper.pushJPathValue(this._all_jpaths[i], this._all_values[i])
-      }
-
-      await consul.set(this.key, helper.toString(true))
-    } else {
-      throw new Error('Can only push to JSON array keys')
+    const result = await consul.get<string>(this.key)
+    const parsed = typeof result === 'string' ? JSON.parse(result) : result
+    if (!parsed || (typeof parsed === 'object' && !parsed.length)) {
+      throw new Error('Current value is not a json array')
     }
+    parsed.push(this._value)
+    await consul.set(this.key, JSON.stringify(parsed, null, 2))
     this.reset()
   }
-
+  public async pop(consul: IMigrationClient, amount?: number): Promise<void> {
+    const result = await consul.get<string>(this.key)
+    const parsed = typeof result === 'string' ? JSON.parse(result) : result
+    if (!parsed || (typeof parsed === 'object' && !parsed.length)) {
+      throw new Error('Current value is not a json array')
+    }
+    if (!amount) {
+      amount = 1
+    }
+    while (amount-- > 0) parsed.pop()
+    return consul.set(this.key, JSON.stringify(parsed, null, 2))
+  }
   public async remove(consul: IMigrationClient): Promise<void> {
     if (this._isJson) {
       const result = await consul.get<string>(this.key)
@@ -118,11 +116,7 @@ export class QueryFactory {
         throw new Error('Current value is not a json object')
       }
       if (this._jsonpath) {
-        jp.apply(
-          parsed,
-          this._jsonpath,
-          this._jsonpathFunc ?? (() => this._value)
-        )
+        jp.value(parsed, this._jsonpath, undefined)
         return consul.set(this.key, JSON.stringify(parsed, null, 2))
       } else {
         const helper = new JSONHelper(result)

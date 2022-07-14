@@ -53,7 +53,15 @@ export interface IMigrationClient {
     * @param callback The callback function to run on matching jsonpath values
     */
   callback<T = any>(callback: (value: any) => T): IMigrationClient
-    
+  /**
+  * Executes the migration by pushing value to root array (requires existing consul key)
+    */
+  push(): Promise<void>
+  /**
+  * Removes last 'amount' elements of root array (default 1)
+  * @param amount Amount of elements to pop from array
+    */
+  pop(amount?: number): Promise<void>
 /**
     * Executes the migration to add or change a key
     */

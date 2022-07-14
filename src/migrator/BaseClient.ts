@@ -78,7 +78,12 @@ export abstract class BaseClient implements IMigrationClient {
     this._factory.setJsonPathFunc(callback)
     return this
   }
-
+  public push(): Promise<void> {
+    return this._factory.push(this)
+  }
+  public pop(amount?: number): Promise<void> {
+    return this._factory.pop(this, amount)
+  }
   public async save(): Promise<void> {
     await this._factory.exec(this)
   }

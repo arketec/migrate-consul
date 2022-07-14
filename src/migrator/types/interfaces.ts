@@ -11,6 +11,8 @@ export interface IMigrationClient {
   jpath(path: string): IMigrationClient
   jsonpath(jsonpath: string): IMigrationClient
   callback<T = any>(callback: (value: any) => T): IMigrationClient
+  push(): Promise<void>
+  pop(): Promise<void>
   save(): Promise<void>
   drop(): Promise<void>
 }

@@ -1,66 +1,67 @@
 export interface IMigrationClient {
-/**
-    * Get a key from Consul
-    * @param key The key to get
-    */
+  /**
+   * Get a key from Consul
+   * @param key The key to get
+   */
   get<T>(key: string): Promise<T>
-/**
-  * Set a key in Consul
-  * @param key The key to set
-  * @param value The value to set
-*/
+  /**
+   * Set a key in Consul
+   * @param key The key to set
+   * @param value The value to set
+   */
   set(key: string, value: string): Promise<void>
-/**
-    * Set multiple keys in Consul
-    * @param keyValuePairs The key value pairs to set
-    */
+  /**
+   * Set multiple keys in Consul
+   * @param keyValuePairs The key value pairs to set
+   */
   setMany(values: { [key: string]: string }): Promise<void>
-/**
-    * Delete a key from Consul
-    * @param key The key to delete
-    */
+  /**
+   * Delete a key from Consul
+   * @param key The key to delete
+   */
   delete(key: string): Promise<void>
-/**
-    * Delete multiple keys from Consul
-    * @param keys The keys to delete
-    */
+  /**
+   * Delete multiple keys from Consul
+   * @param keys The keys to delete
+   */
   deleteMany(keys: string[]): Promise<void>
-    
-/**
-    * Sets key for the QueryFactory
-    * @param key The migration key
-    */
+
+  /**
+   * Sets key for the QueryFactory
+   * @param key The migration key
+   */
   key(key: string): IMigrationClient
-/**
-    * Sets value for the QueryFactory
-    * @param value The migration value
-    */
+  /**
+   * Sets value for the QueryFactory
+   * @param value The migration value
+   */
   val(val: any): IMigrationClient
-    /**
-    * @deprecated since version 3.0.0
-    * Sets jpath for the QueryFactory
-    * @param jpath The jpath to the JSON value
-    */
+  /**
+   * @deprecated since version 3.0.0
+   * Sets jpath for the QueryFactory
+   * @param jpath The jpath to the JSON value
+   */
   jpath(path: string): IMigrationClient
-/**
-    * Sets jsonpath for the QueryFactory
-    * @param jsonpath The jsonpath to the JSON value
-    * To learn more: https://support.smartbear.com/alertsite/docs/monitors/api/endpoint/jsonpath.html
-    */
+  /**
+   * Sets jsonpath for the QueryFactory
+   * @param jsonpath The jsonpath to the JSON value
+   * To learn more: https://support.smartbear.com/alertsite/docs/monitors/api/endpoint/jsonpath.html
+   */
   jsonpath(jsonpath: string): IMigrationClient
   /**
-  * A callback function to run on matching jsonpath values
-    * @param callback The callback function to run on matching jsonpath values
-    */
+   * A callback function to run on matching jsonpath values
+   * @param callback The callback function to run on matching jsonpath values
+   */
   callback<T = any>(callback: (value: any) => T): IMigrationClient
-    
-/**
-    * Executes the migration to add or change a key
-    */
+  push(): Promise<void>
+  pop(n?: number): Promise<void>
+  /**
+   * Executes the migration to add or change a key
+   */
   save(): Promise<void>
-    /**
-    * Executes the migration to delete a key
-    */
+  /**
+   * Executes the migration to delete a key
+   */
   drop(): Promise<void>
 }
 
@@ -82,7 +83,6 @@ declare namespace Consul {
     statusMessage?: string | undefined
     url?: string | undefined
     method?: string | undefined
-
   }
 
   interface Callback<TData> {
@@ -615,7 +615,7 @@ declare namespace Consul {
   namespace Event {
     interface FireOptions extends CommonOptions {
       name: string
-      payload: string 
+      payload: string
       node?: string | undefined
       service?: string | undefined
       tag?: string | undefined
@@ -633,14 +633,10 @@ declare namespace Consul {
      * Fires a new user event
      */
     fire: {
-      <TData>(
-        name: string,
-        payload: string ,
-        callback: Callback<TData>
-      ): void
+      <TData>(name: string, payload: string, callback: Callback<TData>): void
       <TData>(name: string, callback: Callback<TData>): void
       <TData>(opts: Event.FireOptions, callback: Callback<TData>): void
-      <TData>(name: string, payload: string ): Promise<TData>
+      <TData>(name: string, payload: string): Promise<TData>
       <TData>(name: string): Promise<TData>
       <TData>(opts: Event.FireOptions): Promise<TData>
     }
@@ -753,7 +749,7 @@ declare namespace Consul {
 
     interface SetOptions extends CommonOptions {
       key: string
-      value: string 
+      value: string
       dc?: string | undefined
       flags?: number | undefined
       cas?: string | undefined
@@ -801,22 +797,14 @@ declare namespace Consul {
     set: {
       <TData>(
         key: string,
-        value: string ,
+        value: string,
         opts: Kv.SetOptions,
         callback: Callback<TData>
       ): void
-      <TData>(
-        key: string,
-        value: string ,
-        callback: Callback<TData>
-      ): void
+      <TData>(key: string, value: string, callback: Callback<TData>): void
       <TData>(opts: Kv.SetOptions, callback: Callback<TData>): void
-      <TData>(
-        key: string,
-        value: string ,
-        opts: Kv.SetOptions
-      ): Promise<TData>
-      <TData>(key: string, value: string ): Promise<TData>
+      <TData>(key: string, value: string, opts: Kv.SetOptions): Promise<TData>
+      <TData>(key: string, value: string): Promise<TData>
       <TData>(opts: Kv.SetOptions): Promise<TData>
     }
 
@@ -845,7 +833,7 @@ declare namespace Consul {
     interface Options {
       key: string
       session?: Object | string | undefined
-      value?: string  | undefined
+      value?: string | undefined
       lockwaittime?: string | undefined
       lockretrytime?: string | undefined
     }
@@ -1098,4 +1086,3 @@ declare namespace Consul {
 declare let Consul: Consul.ConsulStatic
 
 export { Consul }
-
