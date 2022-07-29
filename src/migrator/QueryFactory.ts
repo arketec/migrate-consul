@@ -82,6 +82,10 @@ export class QueryFactory {
         return consul.set(this.key, helper.toString(true))
       }
     } else {
+      if (typeof this._value === 'object')
+        return consul.set(this.key, JSON.stringify(this._value, null, 2))
+      if (typeof this._value !== 'string')
+        return consul.set(this.key, this._value.toString())
       return consul.set(this.key, this._value)
     }
   }
