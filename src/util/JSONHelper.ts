@@ -90,4 +90,17 @@ export class JSONHelper {
   private jPathToKeys(jpath: string): string[] {
     return jpath.split('.')
   }
+  
+  public insertObjectAtJPath(jPath: string, val: any): void {
+    let schema = this._json;
+    jPath = jPath.split(".").slice(1).join(".");
+    const keys = this.jPathToKeys(jPath);
+    const len = keys.length;
+    for(let i = 0; i < len-1; i++) {
+        const elem = keys[i];
+        if( !schema[elem] ) schema[elem] = {};
+        schema = schema[elem];
+    }
+    schema[keys[len-1]] = val;
+  }
 }

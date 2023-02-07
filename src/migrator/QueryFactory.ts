@@ -60,33 +60,35 @@ export class QueryFactory {
 
   public async exec(consul: IMigrationClient): Promise<void> {
     if (this._isJson) {
-      const result = await consul.get<string>(this.key)
-      const parsed = typeof result === 'string' ? JSON.parse(result) : result
+      const result = await consul.get<string>(this.key);
+      const parsed = typeof result === 'string' ? JSON.parse(result) : result;
       if (!parsed) {
-        throw new Error('Current value is not a json object')
+        throw new Error('Current value is not a json object');
       }
+      const helper = new JSONHelper(result);
       if (this._jsonpath) {
-        jp.apply(
-          parsed,
-          this._jsonpath,
-          this._jsonpathFunc ?? (() => this._value)
-        )
-        return consul.set(this.key, JSON.stringify(parsed, null, 2))
-      } else {
-        const helper = new JSONHelper(result)
-
-        for (const i in this._all_jpaths) {
-          helper.setJPathValue(this._all_jpaths[i], this._all_values[i])
+        if(jp.query(parsed, this._jsonpath).length) {
+          jp.apply(
+            parsed,
+            this._jsonpath,
+            this._jsonpathFunc ?? (() => this._value)
+          )
+        } else {
+          helper.insertObjectAtJPath(this._jsonpath, this._value);
         }
-
-        return consul.set(this.key, helper.toString(true))
+        return consul.set(this.key, JSON.stringify(parsed, null, 2));
+      } else {
+        for (const i in this._all_jpaths) {
+          helper.setJPathValue(this._all_jpaths[i], this._all_values[i]);
+        }
+        return consul.set(this.key, helper.toString(true));
       }
     } else {
       if (typeof this._value === 'object')
-        return consul.set(this.key, JSON.stringify(this._value, null, 2))
+        return consul.set(this.key, JSON.stringify(this._value, null, 2));
       if (typeof this._value !== 'string')
-        return consul.set(this.key, this._value.toString())
-      return consul.set(this.key, this._value)
+        return consul.set(this.key, this._value.toString());
+      return consul.set(this.key, this._value);
     }
   }
 
