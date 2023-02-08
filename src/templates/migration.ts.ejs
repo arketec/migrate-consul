@@ -24,7 +24,7 @@
     // 
     // results -----> {"a": {"b": {"c": "test value"}}}
     //
-    // Note: use jsonpath to add new key-value pair in consul objects
+    // Note: use .jsonpath() to add new key-value pair in consul objects (only "." notation supported for denoting path)
     // await consul
     //  .key(`Test_Key`)
     //  .jsonpath(`$.b.f`)

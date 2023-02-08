@@ -75,6 +75,7 @@ export class QueryFactory {
           )
         } else {
           helper.insertObjectAtJPath(this._jsonpath, this._value);
+          return consul.set(this.key, helper.toString(true));
         }
         return consul.set(this.key, JSON.stringify(parsed, null, 2));
       } else {
