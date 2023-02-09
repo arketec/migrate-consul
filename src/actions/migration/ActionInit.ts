@@ -90,6 +90,8 @@ export class ActionInit extends ActionBase<CommonOptions> {
           mongoHost: 'localhost',
           mongoPort: 27017,
           dbName: 'consul_migrations',
+          mongoConnectionString: null,
+          mongoConnectionStringEnvVar: null,
           consulHost: 'localhost',
           consulPort: 8500,
           consulSecure: false,

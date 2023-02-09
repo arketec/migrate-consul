@@ -105,7 +105,7 @@ export class ActionVerify extends ActionDBBase<VerifyOptions> {
           this.loggers.debug
         )
       }
-      if (this.options.diff) {
+      if (this.options.diff && migrator.output && migrator.output.key) {
         const currentValue = await migrator.get<string>(migrator.output.key)
         const stringifiedCurrentValue = currentValue
           ? typeof currentValue === 'object'

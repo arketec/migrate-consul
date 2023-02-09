@@ -3,7 +3,10 @@
     "database": {
         "host": "<%= props.mongoHost %>",
         "port": "<%= props.mongoPort %>",
-        "dbname": "<%= props.dbName %>"
+        "dbname": "<%= props.dbName %>",
+        // use instead of host:port:dbname
+        //"connectionString": "<%= props.mongoConnectionString %>", 
+        //"connectionStringEnvVar": "<%= props.mongoConnectionStringEnvVar %>"
     },
     <% } %>
     // configure consul agent

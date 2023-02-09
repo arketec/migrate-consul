@@ -22,18 +22,33 @@ export class Config {
     const tmp = await fs.readAsync(path)
     if (!tmp) throw new Error(`${path} does not exist`)
     const config = parse(tmp)
+    for (const [_, value] of Object.entries<any>(config)) {
+      if (value.connectionStringEnvVar) {
+        value.connectionString = process.env[value.connectionStringEnvVar]
+      }
+    }
     return new Config(config as Config)
   }
   public static loadSync(fs: Filesystem, path: string): Config {
     const tmp = fs.read(path)
     if (!tmp) throw new Error(`${path} does not exist`)
     const config = parse(tmp)
+    for (const [_, value] of Object.entries<any>(config)) {
+      if (value.connectionStringEnvVar) {
+        value.connectionString = process.env[value.connectionStringEnvVar]
+      }
+    }
     return new Config(config as Config)
   }
   public static tryLoadSync(fs: Filesystem, path: string): Config {
     try {
       const tmp = fs.read(path)
       const config = parse(tmp)
+      for (const [_, value] of Object.entries<any>(config)) {
+        if (value.connectionStringEnvVar) {
+          value.connectionString = process.env[value.connectionStringEnvVar]
+        }
+      }
       return new Config(config as Config)
     } catch {
       return undefined
@@ -49,6 +64,7 @@ export interface IWebServer {
   host: string
   port: number
   connectionString?: string
+  connectionStringEnvVar?: string
 }
 export interface MongoConfig extends IWebServer {
   dbname: string
