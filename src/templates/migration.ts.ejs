@@ -23,7 +23,17 @@
     // await consul.key('Test_Key').jsonpath('$.b.c').val('test value').save()
     // 
     // results -----> {"a": {"b": {"c": "test value"}}}
-    // 
+    //
+    // Note: use .jsonpath() to add new key-value pair in consul objects (only "." notation supported for denoting path)
+    // await consul
+    //  .key(`Test_Key`)
+    //  .jsonpath(`$.b.f`)
+    //  .val({
+    //    "path": "www.test.com",
+    //    "method": "GET"
+    //  })
+    //  .save();
+    //
     // to set keys in depending on environment (set in config), use the 'env' value
     // const values = { dev: 'foo', test: 'bar', prod: 'baz' }
     // await consul.set('Test_Key', values[env])
