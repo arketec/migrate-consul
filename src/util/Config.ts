@@ -1,5 +1,15 @@
 import { parse } from 'hjson'
-export class Config {
+
+export interface IConfig {
+  database?: MongoConfig
+  consul: ConsulConfig
+  generation: GenerationOptions
+  diff: Diff
+  migrationsDirectory: string
+  environment: string
+  debug?: boolean
+}
+export class Config implements IConfig {
   public database?: MongoConfig
   public consul: ConsulConfig
   public generation: GenerationOptions
@@ -8,7 +18,7 @@ export class Config {
   public environment: string
   public debug?: boolean
 
-  constructor(config?: Config) {
+  constructor(config?: IConfig) {
     this.database = config?.database
     this.consul = config?.consul
     this.environment = config?.environment
@@ -73,6 +83,7 @@ export interface ConsulConfig extends IWebServer {
   secure?: boolean
   acl: boolean
   aclTokenEnvVar?: string
+  aclToken?: string
 }
 
 export interface Diff {

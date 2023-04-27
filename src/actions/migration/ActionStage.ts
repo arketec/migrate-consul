@@ -1,6 +1,6 @@
 import { ActionDBBase } from '../ActionDBBase'
+import stageFromFilesystem from '../common/stage'
 import { CommonOptions } from '../types/interfaces'
-import { createHash } from 'crypto'
 
 export class ActionStage extends ActionDBBase<StageOptions> {
   public filesystem: any
@@ -28,41 +28,13 @@ export class ActionStage extends ActionDBBase<StageOptions> {
   protected async _executionFunction() {
     await this.getService()
     const migrationsDir = this.config.migrationsDirectory
-    const files = await this.filesystem.listAsync(
-      `${this.options.path ?? this.appRoot}/${migrationsDir}/`
+    return await stageFromFilesystem(
+      this.service,
+      this.loggers,
+      this.filesystem,
+      `${this.options.path ?? this.appRoot}/${migrationsDir}/`,
+      this.options.author
     )
-    for (const file of files) {
-      if (file.endsWith('-sample.ts')) {
-        this.loggers.info(
-          `skipping sample migration file, ${file}. If this is a mistake, please end filename with something other than -sample.ts`
-        )
-        continue
-      }
-      const hasMigration = await this.service.hasMigration(file)
-
-      if (!hasMigration) {
-        const now = new Date()
-        const content = await this.filesystem.readAsync(
-          `${this.options.path ?? this.appRoot}/${migrationsDir}/${file}`
-        )
-        if (!content) {
-          this.loggers.error(`content not found for file ${file}`)
-          return 1
-        }
-        const hashFunc = createHash('sha1')
-        await this.service.save({
-          name: file,
-          date_added: now,
-          status: 0,
-          hash: hashFunc.update(content).digest('base64'),
-          script_author: this.options.author,
-        })
-
-        this.loggers.info(`staged migration ${file}`)
-      }
-    }
-
-    return 0
   }
 }
 

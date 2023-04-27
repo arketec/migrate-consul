@@ -33,6 +33,7 @@ export class ActionDown extends ActionDBBase<DownOptions> {
         path: 'path to directory containing the migrations',
         configPath: 'path to directory containing migrate-consul-config.jsonc',
         last: 'number of migrations to run down, starting with the most recent. default 1',
+        unstage: 'unstage the last migration after running down',
         force: "force migration to run even if hash doesn't match",
         token: `consul ACL token if not in the environment variable provided in the config`,
         debug: 'print debug info while running',
@@ -40,8 +41,10 @@ export class ActionDown extends ActionDBBase<DownOptions> {
       [
         'migrate-consul down',
         'migrate-consul down --force',
+        'migrate-consul down --unstage',
         'migrate-consul down --last 1',
         'migrate-consul down --last 3',
+        'migrate-consul down --last 3 --unstage',
       ],
       loggers,
       consul,
@@ -110,6 +113,11 @@ export class ActionDown extends ActionDBBase<DownOptions> {
       try {
         await script.down(migrator, this.config.environment, this.getConsul())
         await this.service.save({ ...migration, status: 0 })
+
+        if (this.options.unstage) {
+          await this.service.delete(migration.name)
+          this.loggers.info(`unstaged ${migration.name}`)
+        }
       } catch (e: any) {
         await this.service.save({ ...migration, status: 1 })
         throw e

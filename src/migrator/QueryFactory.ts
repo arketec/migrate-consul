@@ -6,137 +6,248 @@ import { JSONHelper } from './../util/JSONHelper'
 export class QueryFactory {
   public key: string
   private _jpath: string
-  private _jsonpath: string
+  private _all_jsonpaths: string[]
   private _jsonpathFunc: (value: any) => any
+  private _all_jsonpathFuncs: ((value: any) => any)[]
   private _all_jpaths: string[]
   private _value: any
   private _all_values: string[]
+  private _jsonpaths_to_push: number[]
+  private _jsonpaths_to_pop: number[]
+  private _jsonpaths_to_splice: { i: number; index: number }[]
   private _isJson: boolean
 
   constructor() {
     this.key = null
     this._jpath = null
-    this._jsonpath = null
+    this._all_jsonpaths = []
     this._jsonpathFunc = null
+    this._all_jsonpathFuncs = []
     this._all_jpaths = []
     this._value = null
     this._all_values = []
     this._isJson = false
+    this._jsonpaths_to_push = []
+    this._jsonpaths_to_pop = []
+    this._jsonpaths_to_splice = []
   }
 
-  private reset() {
-    this.key = null
-    this._jpath = null
-    this._jsonpath = null
-    this._all_jpaths = []
-    this._value = null
-    this._all_values = []
-    this._isJson = false
-  }
-
-  public setKey(k: string): void {
+  public setKey(k: string): QueryFactory {
+    if (this.key) throw new Error('Key already set')
     this.key = k
+    return this
   }
 
-  public setJPath(path: string): void {
+  public setJPath(path: string): QueryFactory {
     this._isJson = true
     this._jpath = path
     this._all_jpaths.push(this._jpath)
+    return this
   }
 
-  public setJsonPath(path: string): void {
+  public addJsonPath(path: string): QueryFactory {
     this._isJson = true
-    this._jsonpath = path
+    this._all_jsonpaths.push(path)
+    return this
   }
 
-  public setJsonPathFunc(func: (value: any) => any): void {
+  public setJsonPathFunc(func: (value: any) => any): QueryFactory {
     this._jsonpathFunc = func
+    this._all_jsonpathFuncs.push(func)
+    this._all_values.push(undefined)
+    return this
   }
 
-  public setValue(v: any): void {
+  public setAndAddValue(v: any): QueryFactory {
     this._value = this.tryParseJson(v)
     this._all_values.push(this._value)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    this._all_jsonpathFuncs.push(undefined)
+    return this
+  }
+  public addDelete(): QueryFactory {
+    this._value = undefined
+    this._all_values.push(undefined)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    this._all_jsonpathFuncs.push((_) => undefined)
+    return this
   }
 
   public async exec(consul: IMigrationClient): Promise<void> {
     if (this._isJson) {
-      const result = await consul.get<string>(this.key)
+      const result = await consul.get<any>(this.key)
       if (result) {
-        const parsed = typeof result === 'string' ? JSON.parse(result) : result
-        if (!parsed) {
-          throw new Error('Current value is not a json object')
-        }
-        if (this._jsonpath) {
-          jp.apply(
-            parsed,
-            this._jsonpath,
-            this._jsonpathFunc ?? (() => this._value)
-          )
-          return consul.set(this.key, JSON.stringify(parsed, null, 2))
-        } else {
-          const helper = new JSONHelper(result)
+        const parsed =
+          typeof result === 'string' ? JSON.parse(result) : result ?? {}
 
-          for (const i in this._all_jpaths) {
-            helper.setJPathValue(this._all_jpaths[i], this._all_values[i])
-          }
-
-          return consul.set(this.key, helper.toString(true))
+        const helper = new JSONHelper(parsed)
+        if (this._all_jsonpaths.length) {
+          this.handleJsonPaths(helper)
         }
-      } else {
-        return consul.set(this.key, JSON.stringify(this._value, null, 2))
+        if (this._all_jpaths.length) {
+          this.handleDeprecatedJpaths(helper)
+        }
+        return consul.set(this.key, helper.toString(true))
       }
-    } else {
-      if (typeof this._value === 'object')
-        return consul.set(this.key, JSON.stringify(this._value, null, 2))
-      if (typeof this._value !== 'string')
-        return consul.set(this.key, this._value.toString())
-      return consul.set(this.key, this._value)
     }
+    return this.setValueAsString(consul)
+  }
+  private setValueAsString(consul: IMigrationClient): Promise<void> {
+    if (typeof this._value === 'object')
+      return consul.set(this.key, JSON.stringify(this._value ?? {}, null, 2))
+    return consul.set(this.key, this._value?.toString() ?? '')
+  }
+  private handleJsonPaths<T = any>(
+    helper: JSONHelper<T>,
+    remove?: boolean
+  ): void {
+    for (let i = 0; i < this._all_jsonpaths.length; i++) {
+      if (jp.query(helper.getJSON(), this._all_jsonpaths[i]).length) {
+        if (remove)
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          jp.apply(helper.getJSON(), this._all_jsonpaths[i], (_) => undefined)
+        else if (this._jsonpaths_to_push.includes(i)) {
+          jp.apply(helper.getJSON(), this._all_jsonpaths[i], (existing) => [
+            ...existing,
+            this._all_values[i],
+          ])
+        } else if (this._jsonpaths_to_pop.includes(i)) {
+          jp.apply(helper.getJSON(), this._all_jsonpaths[i], (existing) => {
+            existing.pop()
+            return existing
+          })
+        } else if (this._jsonpaths_to_splice.map((x) => x.i).includes(i)) {
+          jp.apply(helper.getJSON(), this._all_jsonpaths[i], (existing) => {
+            const { index } = this._jsonpaths_to_splice.find((x) => x.i === i)
+            ;(existing as any[]).splice(index, 0, this._all_values[i])
+            return existing
+          })
+        } else this.applyValueFunctionOrValue(helper, i)
+      } else {
+        if (!remove) this.insertValueFunctionOrValue(helper, i)
+      }
+    }
+  }
+  private applyValueFunctionOrValue<T = any>(
+    helper: JSONHelper<T>,
+    index: number
+  ): void {
+    if (
+      this._all_jsonpathFuncs.length > index &&
+      this._all_jsonpathFuncs[index]
+    )
+      jp.apply(
+        helper.getJSON(),
+        this._all_jsonpaths[index],
+        this._all_jsonpathFuncs[index]
+      )
+    else if (this._all_values.length > index && this._all_values[index])
+      jp.apply(
+        helper.getJSON(),
+        this._all_jsonpaths[index],
+        () => this._all_values[index]
+      )
+    else
+      jp.apply(
+        helper.getJSON(),
+        this._all_jsonpaths[index],
+        this._jsonpathFunc ?? ((v) => v)
+      )
   }
 
-  public async push(consul: IMigrationClient): Promise<void> {
-    const result = await consul.get<string>(this.key)
-    const parsed = typeof result === 'string' ? JSON.parse(result) : result
-    if (!parsed || (typeof parsed === 'object' && !parsed.length)) {
-      throw new Error('Current value is not a json array')
-    }
-    parsed.push(this._value)
-    await consul.set(this.key, JSON.stringify(parsed, null, 2))
-    this.reset()
+  private insertValueFunctionOrValue<T = any>(
+    helper: JSONHelper<T>,
+    index: number
+  ): void {
+    if (
+      this._all_jsonpathFuncs.length > index &&
+      this._all_jsonpathFuncs[index]
+    )
+      helper.insertObjectAtJPath(
+        this._all_jsonpaths[index],
+        this._all_jsonpathFuncs[index]({})
+      )
+    else if (this._all_values.length > index && this._all_values[index])
+      helper.insertObjectAtJPath(
+        this._all_jsonpaths[index],
+        this._all_values[index]
+      )
+    else helper.insertObjectAtJPath(this._all_jsonpaths[index], {})
   }
-  public async pop(consul: IMigrationClient, amount?: number): Promise<void> {
-    const result = await consul.get<string>(this.key)
-    const parsed = typeof result === 'string' ? JSON.parse(result) : result
-    if (!parsed || (typeof parsed === 'object' && !parsed.length)) {
-      throw new Error('Current value is not a json array')
+  private handleDeprecatedJpaths<T = any>(
+    helper: JSONHelper<T>,
+    remove?: boolean
+  ): void {
+    for (const i in this._all_jpaths) {
+      if (remove) helper.removeJPath(this._all_jpaths[i])
+      else helper.setJPathValue(this._all_jpaths[i], this._all_values[i])
     }
-    if (!amount) {
-      amount = 1
-    }
-    while (amount-- > 0) parsed.pop()
-    return consul.set(this.key, JSON.stringify(parsed, null, 2))
   }
+  public splice(val: any, index?: number): QueryFactory {
+    if (
+      this._jsonpaths_to_splice[this._jsonpaths_to_splice.length - 1] &&
+      this._jsonpaths_to_splice[this._jsonpaths_to_splice.length - 1].i ===
+        this._all_jsonpaths.length - 1
+    ) {
+      this._all_jsonpaths.push(
+        this._all_jsonpaths[this._all_jsonpaths.length - 1]
+      )
+    }
+    this._jsonpaths_to_splice.push({
+      i: this._all_values.length,
+      index: index ?? 0,
+    })
+    this.setAndAddValue(val)
+    return this
+  }
+  public push(val: any): QueryFactory {
+    if (
+      this._jsonpaths_to_push[this._jsonpaths_to_push.length - 1] ===
+      this._all_jsonpaths.length - 1
+    ) {
+      this._all_jsonpaths.push(
+        this._all_jsonpaths[this._all_jsonpaths.length - 1]
+      )
+    }
+    this._jsonpaths_to_push.push(this._all_values.length)
+    this.setAndAddValue(val)
+    return this
+  }
+  public pop(): QueryFactory {
+    if (
+      this._jsonpaths_to_pop[this._jsonpaths_to_pop.length - 1] ===
+      this._all_jsonpaths.length - 1
+    ) {
+      this._all_jsonpaths.push(
+        this._all_jsonpaths[this._all_jsonpaths.length - 1]
+      )
+    }
+    this._jsonpaths_to_pop.push(this._all_values.length)
+    this.addDelete()
+    return this
+  }
+
   public async remove(consul: IMigrationClient): Promise<void> {
     if (this._isJson) {
-      const result = await consul.get<string>(this.key)
-      const parsed = typeof result === 'string' ? JSON.parse(result) : result
-      if (!parsed) {
-        throw new Error('Current value is not a json object')
-      }
-      if (this._jsonpath) {
-        jp.value(parsed, this._jsonpath, undefined)
-        return consul.set(this.key, JSON.stringify(parsed, null, 2))
-      } else {
-        const helper = new JSONHelper(result)
-        for (const i in this._all_jpaths) {
-          helper.removeJPath(this._all_jpaths[i])
+      console.log(
+        'this method is deprecated on jsonpath values, use remove() instead'
+      )
+      const result = await consul.get<any>(this.key)
+      if (result) {
+        const parsed =
+          typeof result === 'string' ? JSON.parse(result) : result ?? {}
+
+        const helper = new JSONHelper(parsed)
+        if (this._all_jsonpaths.length) {
+          this.handleJsonPaths(helper, true)
         }
-        await consul.set(this.key, helper.toString(true))
+        if (this._all_jpaths.length) {
+          this.handleDeprecatedJpaths(helper, true)
+        }
+        return consul.set(this.key, helper.toString(true))
       }
-    } else {
-      await consul.delete(this.key)
     }
-    this.reset()
+    return consul.delete(this.key)
   }
 
   private tryParseJson(s: string) {

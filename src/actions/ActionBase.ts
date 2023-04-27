@@ -1,4 +1,5 @@
 import '../polyfills'
+
 import { Config, Filesystem } from '../util/Config'
 
 import { CommandHelp } from '../util/CommandHelp'
@@ -46,7 +47,7 @@ export abstract class ActionBase<TOptions> {
     this.description = description
     this.helpMenu = new CommandHelp(name, description, options, ...examples)
 
-    ActionBase<TOptions>._debug = false
+    ActionBase._debug = false
 
     this.loggers = {
       info: loggers.info,
@@ -72,8 +73,7 @@ export abstract class ActionBase<TOptions> {
         filesystem,
         `${this.configRoot}/migrate-consul-config.jsonc`
       )
-      if (!ActionBase<TOptions>._debug)
-        ActionBase<TOptions>._debug = this.config.debug
+      if (!ActionBase._debug) ActionBase._debug = this.config.debug
       this.loggers.debug(this.config, 'config')
     } catch (e: any) {
       this.loggers.error(e.message)
@@ -99,7 +99,7 @@ export abstract class ActionBase<TOptions> {
       this._token = options.token
     }
     if (options.debug) {
-      ActionBase<TOptions>._debug = true
+      ActionBase._debug = true
     }
   }
 
@@ -114,7 +114,9 @@ export abstract class ActionBase<TOptions> {
           this.config.consul.acl || this._token
             ? {
                 token:
-                  this._token ?? process.env[this.config.consul.aclTokenEnvVar],
+                  this._token ??
+                  this.config.consul.aclToken ??
+                  process.env[this.config.consul.aclTokenEnvVar],
               }
             : undefined,
       })
@@ -141,6 +143,6 @@ export abstract class ActionBase<TOptions> {
     msg: any,
     title?: string
   ) {
-    if (ActionBase<TOptions>._debug) debugFunc(msg, title)
+    if (ActionBase._debug) debugFunc(msg, title)
   }
 }

@@ -13,6 +13,7 @@ import { createHash } from 'crypto'
 import { requireFromString } from '../../util/require'
 
 import Consul = require('consul')
+import stageFromFilesystem from '../common/stage'
 
 export class ActionUp extends ActionDBBase<UpOptions> {
   public filesystem: any
@@ -32,11 +33,16 @@ export class ActionUp extends ActionDBBase<UpOptions> {
         help: 'prints this help menu',
         path: 'path to directory containing the migrations',
         configPath: 'path to directory containing migrate-consul-config.jsonc',
+        stage: "stage any un-staged migrations before running 'up'",
         force: "force migration to run even if hash doesn't match",
         token: `consul ACL token if not in the environment variable provided in the config`,
         debug: 'print debug info while running',
       },
-      ['migrate-consul up', 'migrate-consul up --force'],
+      [
+        'migrate-consul up',
+        'migrate-consul up --force',
+        'migrate-consul up --stage myUserName',
+      ],
       loggers,
       consul,
       repo
@@ -45,6 +51,18 @@ export class ActionUp extends ActionDBBase<UpOptions> {
 
   protected async _executionFunction() {
     this.getService()
+
+    if (this.options.stage)
+      await stageFromFilesystem(
+        this.service,
+        this.loggers,
+        this.filesystem,
+        `${this.options.path ?? this.appRoot}/${
+          this.config.migrationsDirectory
+        }/`,
+        typeof this.options.stage === 'string' ? this.options.stage : undefined
+      )
+
     const migrator = new ConsulMigrationClient(
       this.config,
       this.loggers,

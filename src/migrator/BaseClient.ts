@@ -10,6 +10,7 @@ export abstract class BaseClient implements IMigrationClient {
   protected _config: Config
   protected _factory: QueryFactory
   protected _logger: ILogger
+  private _callback: (result: any) => void
   public output: {
     key: string
     value: string
@@ -22,6 +23,13 @@ export abstract class BaseClient implements IMigrationClient {
         host: config.consul.host,
         port: config.consul.port.toString(),
         promisify: true,
+        defaults: config.consul.acl
+          ? {
+              token:
+                config.consul.aclToken ??
+                process.env[config.consul.aclTokenEnvVar],
+            }
+          : undefined,
       })
     this._config = config
     this._factory = new QueryFactory()
@@ -58,36 +66,55 @@ export abstract class BaseClient implements IMigrationClient {
   }
 
   public key(key: string): IMigrationClient {
+    this._factory = new QueryFactory()
     this._factory.setKey(key)
     return this
   }
   public val(val: any): IMigrationClient {
-    this._factory.setValue(val)
+    if (typeof val === 'function') {
+      this._factory.setJsonPathFunc(val)
+    } else {
+      this._factory.setAndAddValue(val)
+    }
     return this
   }
-
+  public remove(): IMigrationClient {
+    this._factory.addDelete()
+    return this
+  }
   public jpath(path: string): IMigrationClient {
+    this._logger.info(
+      `jpath is deprecated and will be removed in a future version, use jsonpath instead`
+    )
     this._factory.setJPath(path)
     return this
   }
   public jsonpath(jsonpath: string): IMigrationClient {
-    this._factory.setJsonPath(jsonpath)
+    this._factory.addJsonPath(jsonpath)
     return this
   }
-  public callback<T = any>(callback: (value: any) => T): IMigrationClient {
-    this._factory.setJsonPathFunc(callback)
+  public callback<T = any>(callback: (value: T) => void): IMigrationClient {
+    this._callback = callback
     return this
   }
-  public push(): Promise<void> {
-    return this._factory.push(this)
+  public splice(val: any, index?: number): IMigrationClient {
+    this._factory.splice(val, index)
+    return this
   }
-  public pop(amount?: number): Promise<void> {
-    return this._factory.pop(this, amount)
+  public push(val: any): IMigrationClient {
+    this._factory.push(val)
+    return this
+  }
+  public pop(): IMigrationClient {
+    this._factory.pop()
+    return this
   }
   public async save(): Promise<void> {
     await this._factory.exec(this)
+    if (this._callback) this._callback(this.output.value)
   }
   public async drop(): Promise<void> {
     await this._factory.remove(this)
+    if (this._callback) this._callback(this.output.value)
   }
 }

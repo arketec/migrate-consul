@@ -1,21 +1,21 @@
-export class JSONHelper {
-  private _json: any
-  constructor(jsonString: string) {
+export class JSONHelper<T> {
+  private _json: T
+  constructor(jsonString: string | T) {
     this._json =
       typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString
   }
 
-  public getJSON(): any {
+  public getJSON(): T {
     return this._json
   }
 
   public toString(pretty?: boolean): string {
-    if (pretty) return JSON.stringify(this._json, null, 2)
-    else return JSON.stringify(this._json)
+    if (pretty) return JSON.stringify(this._json ?? {}, null, 2)
+    else return JSON.stringify(this._json ?? {})
   }
 
-  public clone(): any {
-    return JSON.parse(JSON.stringify(this._json))
+  public clone(): T {
+    return JSON.parse(JSON.stringify(this._json ?? {}))
   }
 
   public getJPathValue(jpath: string): any {
@@ -54,6 +54,7 @@ export class JSONHelper {
   }
 
   public pushJPathValue(jpath: string, val: any): void {
+    jpath = jpath.split('.').slice(1).join('.')
     const keys = this.jPathToKeys(jpath)
     let toEval = 'this._json'
     for (const i in keys) {
@@ -78,6 +79,7 @@ export class JSONHelper {
   }
 
   public removeJPath(jpath: string): any {
+    jpath = jpath.split('.').slice(1).join('.')
     const keys = this.jPathToKeys(jpath)
     let toEval = 'delete this._json'
     for (const i in keys) {
@@ -89,5 +91,18 @@ export class JSONHelper {
 
   private jPathToKeys(jpath: string): string[] {
     return jpath.split('.')
+  }
+
+  public insertObjectAtJPath(jPath: string, val: any): void {
+    let schema = this._json
+    jPath = jPath.split('.').slice(1).join('.')
+    const keys = this.jPathToKeys(jPath)
+    const len = keys.length
+    for (let i = 0; i < len - 1; i++) {
+      const elem = keys[i]
+      if (!schema[elem]) schema[elem] = {}
+      schema = schema[elem]
+    }
+    schema[keys[len - 1]] = val
   }
 }
