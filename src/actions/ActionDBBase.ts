@@ -4,6 +4,7 @@ import { ActionBase } from './ActionBase'
 import { MongooseAccess } from '../data/mongo_adapter'
 
 import Consul = require('consul')
+import { ConsulMigrationRepo } from '../data/repo/ConsulMigrationRepo'
 
 export abstract class ActionDBBase<TOptions> extends ActionBase<TOptions> {
   protected connection: MongooseAccess
@@ -28,7 +29,7 @@ export abstract class ActionDBBase<TOptions> extends ActionBase<TOptions> {
   }
 
   public async connect() {
-    if (!this.connection)
+    if (!this.connection && this.config.useMongo)
       this.connection = await new MongooseAccess().connect(this.configRoot)
   }
   public async disconnect() {
@@ -36,7 +37,10 @@ export abstract class ActionDBBase<TOptions> extends ActionBase<TOptions> {
   }
 
   protected getService() {
-    if (!this.repo) this.repo = new MongooseMigrationRepo()
+    if (!this.repo)
+      this.repo = this.config.useMongo
+        ? new MongooseMigrationRepo()
+        : new ConsulMigrationRepo(this.consul)
     this.service = new DataService(this.repo)
     return this.service
   }

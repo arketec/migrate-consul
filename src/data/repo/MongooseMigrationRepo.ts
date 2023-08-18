@@ -43,6 +43,23 @@ export class MongooseMigrationRepo implements IRepo {
       { upsert: true }
     )
   }
+  async saveAll(migrations: Migration[]): Promise<void> {
+    const existing = await this.getAll()
+    const newMigrations = [
+      ...existing,
+      ...migrations.filter((m) => !existing.find((e) => e.name === m.name)),
+    ]
+    newMigrations.sort((a, b) => a.name.localeCompare(b.name))
+    await Promise.all(
+      newMigrations.map((m) =>
+        this.migrationRepo.updateOne(
+          { name: m.name },
+          { $set: m },
+          { upsert: true }
+        )
+      )
+    )
+  }
   public async get(name: string): Promise<Migration> {
     const migration = await this.migrationRepo.findOne({ name })
     return this.mapMigration(migration)

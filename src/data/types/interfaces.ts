@@ -1,6 +1,7 @@
 import { Backup, Migration } from './models'
 export interface IRepo {
   save(migration: Migration): Promise<void>
+  saveAll(migrations: Migration[]): Promise<void>
   get(name: string): Promise<Migration>
   getAll(): Promise<Migration[]>
   find(status: number): Promise<Migration[]>

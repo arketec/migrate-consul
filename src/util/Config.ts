@@ -8,6 +8,7 @@ export interface IConfig {
   migrationsDirectory: string
   environment: string
   debug?: boolean
+  useMongo?: boolean
 }
 export class Config implements IConfig {
   public database?: MongoConfig
@@ -17,6 +18,7 @@ export class Config implements IConfig {
   public migrationsDirectory: string
   public environment: string
   public debug?: boolean
+  public useMongo?: boolean
 
   constructor(config?: IConfig) {
     this.database = config?.database
@@ -26,6 +28,7 @@ export class Config implements IConfig {
     this.generation = config?.generation
     this.migrationsDirectory = config?.migrationsDirectory
     this.debug = config?.debug
+    this.useMongo = config?.useMongo && !!this.database
   }
 
   public static async load(fs: Filesystem, path: string): Promise<Config> {

@@ -1,6 +1,6 @@
 {
   "name": "migrate-consul",
-  "version": "3.3.2-beta.11",
+  "version": "4.0.0-beta.0",
   "description": "migrate-consul CLI",
   "types": "build/types/types.d.ts",
   "main": "build/index.js",

@@ -10,6 +10,9 @@ export class DataService implements IRepo {
   public save(migration: Migration): Promise<void> {
     return this._repo.save(migration)
   }
+  public saveAll(migrations: Migration[]): Promise<void> {
+    return this._repo.saveAll(migrations)
+  }
   public get(name: string): Promise<Migration> {
     return this._repo.get(name)
   }
